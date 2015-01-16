@@ -25,14 +25,26 @@ class TwitterImgDownloader
   end
 
   # HTML中から画像のURLを取得する
-  def getImageUrl(html)
-    # twitterのメディアページ
+  def getImageUrl(url)
     begin
+      html = open(url, :allow_redirections => :all).read
+
+      # urlを解析する
+      pageUri = URI(url)
+
       dom = Nokogiri::HTML.parse(html)
+      case pageUri.host
+      when 'twitter.com'
+        # twitterのメディアページ
+        node = dom.search('a.media-thumbnail')
 
-      node = dom.search('a.media-thumbnail')
+        img_url = node.search('img').first.attributes['src'].value
 
-      img_url = node.search('img').first.attributes['src'].value
+        # オリジナルサイズの画像を取得
+        img_url += ':orig'
+      else
+        img_url = nil
+      end
     rescue
       return nil
     end
@@ -70,8 +82,7 @@ class TwitterImgDownloader
   # 指定のURLから画像をダウンロードする
   def imgDownload(url, saveFileName)
     begin
-      html = open(url, :allow_redirections => :all).read
-      img_url = getImageUrl(html)
+      img_url = getImageUrl(url)
 
       if img_url then
         # 拡張子があれば抽出する
