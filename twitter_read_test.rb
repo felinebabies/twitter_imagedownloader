@@ -4,6 +4,7 @@ require_relative 'lib/twitterimgdownloader'
 
 downloader = TwitterImgDownloader.new
 
-KEYWORD = '#幼女版深夜の真剣お絵かき60分一本勝負'
+#KEYWORD = '#幼女版深夜の真剣お絵かき60分一本勝負'
+KEYWORD = '#艦これ版深夜の真剣お絵描き60分一本勝負'
 
 downloader.execSearch(KEYWORD)

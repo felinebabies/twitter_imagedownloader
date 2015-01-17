@@ -7,6 +7,7 @@ require 'bundler'
 Bundler.require
 
 require_relative 'twitterclient'
+require_relative 'valid_url'
 
 # Twitterの検索結果から画像をダウンロードする
 class TwitterImgDownloader
@@ -29,12 +30,17 @@ class TwitterImgDownloader
     begin
       html = open(url, :allow_redirections => :all).read
 
+      @logger.info("画像掲載ページURL:[#{url}]")
+
+      # 3回までのリダイレクト先を取得する
+      validUrl = valid_url(url, 3)
+      @logger.info("画像取得対象URL:[#{validUrl}]")
+
       # urlを解析する
-      pageUri = URI(url)
+      pageUri = URI(validUrl)
 
       dom = Nokogiri::HTML.parse(html)
-      case pageUri.host
-      when 'twitter.com'
+      if pageUri.host == 'twitter.com' then
         # twitterのメディアページ
         node = dom.search('a.media-thumbnail')
 
@@ -43,9 +49,33 @@ class TwitterImgDownloader
         # オリジナルサイズの画像を取得
         img_url += ':orig'
       else
-        img_url = nil
+        # 全ての画像中から最も大きいもののURLを返す
+        imagexpath = '//img'
+        nodes = dom.xpath(imagexpath)
+
+        @logger.info("imgタグは#{nodes.length}個あります")
+
+        if !nodes.empty? then
+          @logger.info("最大サイズの画像を探索します")
+          sizeArray = nodes.map do |imgnode|
+            width = imgnode.attributes['width'].try(:value).try(:to_i) || 0
+            height = imgnode.attributes['height'].try(:value).try(:to_i) || 0
+
+            @logger.info("imgタグの 幅:[#{width}] 高さ:[#{height}]")
+
+            width * height
+          end
+
+          # 最大のサイズとなる要素の位置を得る
+          maxIndex = sizeArray.index(sizeArray.max)
+          img_url = nodes[maxIndex].attribute('src').value
+        else
+          img_url = nil
+        end
       end
-    rescue
+    rescue => ex
+      puts ex.message
+      @logger.error("画像URL探索のエラー[#{ex.message}] [#{ex.backtrace}]")
       return nil
     end
 
@@ -83,6 +113,10 @@ class TwitterImgDownloader
   def imgDownload(url, saveFileName)
     begin
       img_url = getImageUrl(url)
+      if img_url.try(:include?, '?') then
+        querypos = img_url.index('?')
+        img_url = img_url[0...querypos]
+      end
 
       if img_url then
         # 拡張子があれば抽出する
