@@ -32,8 +32,8 @@ class TwitterImgDownloader
 
       @logger.info("画像掲載ページURL:[#{url}]")
 
-      # 3回までのリダイレクト先を取得する
-      validUrl = valid_url(url, 3)
+      # 5回までのリダイレクト先を取得する
+      validUrl = valid_url(url, 5)
       @logger.info("画像取得対象URL:[#{validUrl}]")
 
       # urlを解析する
@@ -87,7 +87,9 @@ class TwitterImgDownloader
     # twitterクライアントの生成
     client = getTwitterClient
 
-    statuses = client.search(keyword + ' -rt', lang: "ja")
+    statuses = client.search(keyword + ' -rt', lang: "ja", result_type: "recent")
+
+    @logger.info("対象ツイートの数は、[#{statuses.count}]個です。")
 
     # ダウンロード実行
     downloadFromStatuses(statuses)
