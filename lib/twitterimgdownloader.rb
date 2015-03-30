@@ -8,6 +8,7 @@ Bundler.require
 
 require_relative 'twitterclient'
 require_relative 'valid_url'
+require_relative 'searchdatamanager'
 
 # Twitterの検索結果から画像をダウンロードする
 class TwitterImgDownloader
@@ -23,6 +24,9 @@ class TwitterImgDownloader
 
     # 画像の保存先を設定する
     @imageDir = imageDir || File.join(@scriptdir, '..', 'images')
+
+    # 検索データマネージャのインスタンスを作る
+    @saveDataManager = SearchDataManager.new(File.join(@scriptdir, '../savedata/searchdata.yml'), @logger)
   end
 
   # HTML中から画像のURLを取得する
@@ -87,9 +91,24 @@ class TwitterImgDownloader
     # twitterクライアントの生成
     client = getTwitterClient
 
+    # キーワード別の最終検索日時を取得する
+    lastSearchTime = @saveDataManager.getLastSearchTime(keyword)
+
+    @logger.info("キーワード[#{keyword}]の最終検索時刻は、#{lastSearchTime}です。")
+
     statuses = client.search(keyword + ' -rt', lang: "ja", result_type: "recent")
 
+    # 最終検索時刻以後を抽出
+    if lastSearchTime != nil then
+      statuses = statuses.select do |item|
+        item.created_at > lastSearchTime
+      end
+    end
+
     @logger.info("対象ツイートの数は、[#{statuses.count}]個です。")
+
+    # 最終検索日時を更新する
+    @saveDataManager.saveLastSearchTime(keyword)
 
     # ダウンロード実行
     downloadFromStatuses(statuses)
@@ -99,6 +118,7 @@ class TwitterImgDownloader
   def downloadFromStatuses(statuses)
     statuses.each do |status|
       puts "#{status.user.screen_name}: #{status.text}"
+      @logger.info "#{status.user.screen_name}: #{status.text}"
 
       # ツイート中のURL一覧を取得する
       urls = URI.extract(status.text, ['http'])
@@ -134,12 +154,10 @@ class TwitterImgDownloader
       end
       sleep SAVEINTERVAL
     rescue => ex
-      puts ex.message
+      @logger.error ex.message
 
       # 失敗時は指定秒数待った後やり直す
-      puts '画像の取得/保存に失敗しました。retryします'
-      sleep RETRYINTERVAL
-      retry
+      @logger.error  '画像の取得/保存に失敗しました。'
     end
   end
 end
