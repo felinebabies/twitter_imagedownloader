@@ -12,5 +12,5 @@ gem 'highline'
 group :development, :test do
   gem 'rspec', '3.0.0'
   gem 'pry'
-  gem 'pry-debugger'
+  gem 'pry-byebug'
 end
