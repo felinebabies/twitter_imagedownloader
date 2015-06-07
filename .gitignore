@@ -2,3 +2,5 @@
 /vendor
 /.bundle
 /images
+/savedata/searchdata.yml
+/savedata/tweetdb.db

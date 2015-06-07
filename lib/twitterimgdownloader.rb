@@ -9,6 +9,7 @@ Bundler.require
 require_relative 'twitterclient'
 require_relative 'valid_url'
 require_relative 'searchdatamanager'
+require_relative 'tweetdatabase'
 
 # Twitterの検索結果から画像をダウンロードする
 class TwitterImgDownloader
@@ -27,6 +28,10 @@ class TwitterImgDownloader
 
     # 検索データマネージャのインスタンスを作る
     @saveDataManager = SearchDataManager.new(File.join(@scriptdir, '../savedata/searchdata.yml'), @logger)
+
+    # tweetデータベースクラスのインスタンスを作る
+    @tweetDb = TweetDataBase.new(nil, @logger)
+    @tweetDb.initDataBase
   end
 
   # HTML中から画像のURLを取得する
@@ -128,6 +133,18 @@ class TwitterImgDownloader
         saveFileName = File.join(@imageDir, imgFileName)
         imgDownload(url, saveFileName)
       end
+
+      userDataObj = {
+        :tweetId => status.id,
+        :tweetStr => status.text,
+        :time => status.created_at.to_s,
+        :userId => status.user.id,
+        :userName => status.user.name,
+        :screenName => status.user.screen_name
+      }
+
+      # データベースにツイート情報を書き込む
+      @tweetDb.registerTweetData(userDataObj)
     end
   end
 

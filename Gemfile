@@ -8,6 +8,7 @@ gem 'nokogiri'
 gem 'open_uri_redirections'
 gem 'activesupport', :require => 'active_support/all'
 gem 'highline'
+gem 'sqlite3'
 
 group :development, :test do
   gem 'rspec', '3.0.0'
