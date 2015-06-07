@@ -10,7 +10,7 @@ currentdir = File.expand_path(File.dirname(__FILE__))
 imagedir = File.join(currentdir, 'images/')
 
 # loggerインスタンスの作成
-logger = Logger.new(STDERR)
+logger = Logger.new(File.join(currentdir, 'log/', 'keyword_downloader.txt'), 0, 5 * 1024 * 1024)
 
 downloader = TwitterImgDownloader.new(imagedir, logger)
 
