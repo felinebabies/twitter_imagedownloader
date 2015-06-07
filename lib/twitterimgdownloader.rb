@@ -159,7 +159,8 @@ class TwitterImgDownloader
 
       if img_url then
         # 拡張子があれば抽出する
-        ext = File.extname(img_url)
+        basename = File.basename(img_url, ":*")
+        ext = File.extname(basename)
 
         # 画像を保存する
         puts img_url
